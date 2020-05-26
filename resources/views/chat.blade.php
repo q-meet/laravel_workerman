@@ -136,6 +136,7 @@
         function onSubmit() {
             var input = document.getElementById("textarea");
             var to_client_id = $("#client_list option:selected").attr("value");
+            var to_user_id = $("#client_list option:selected").attr("value");
             var to_client_name = $("#client_list option:selected").text();
             ws.send('{"type":"say","uid":"{{$user->id}}","to_client_id":"' + to_client_id + '","to_client_name":"' + to_client_name + '","content":"' + input.value.replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r') + '"}');
             input.value = "";

@@ -77,6 +77,7 @@ class Events
                 $clients_list = Gateway::getClientSessionsByGroup($room_id);
                 foreach ($clients_list as $tmp_client_id => $item) {
                     $clients_list[$tmp_client_id] = $item['client_name'];
+                    $clients_list['uid'] = $item['client_name'];
                 }
                 $clients_list[$client_id] = $client_name;
 
@@ -84,7 +85,7 @@ class Events
                 $db->query("update `chat_user` set `client_id`= '$client_id' where id = $uid");
 
                 // 转播给当前房间的所有客户端，xx进入聊天室 message {type:login, client_id:xx, name:xx}
-                $new_message = array('uid' => $uid,'type' => $message_data['type'], 'client_id' => $client_id, 'client_name' => htmlspecialchars($client_name), 'time' => $date);
+                $new_message = array('uid' => $uid, 'type' => $message_data['type'], 'client_id' => $client_id, 'client_name' => htmlspecialchars($client_name), 'time' => $date);
                 Gateway::sendToGroup($room_id, json_encode($new_message));
                 Gateway::joinGroup($client_id, $room_id);
 
@@ -100,7 +101,7 @@ class Events
                     throw new \Exception("\$_SESSION['room_id'] not set. client_ip:{$_SERVER['REMOTE_ADDR']}");
                 }
                 $room_id = $_SESSION['room_id'];
-                $client_name = $_SESSION['client_name'];
+                $client_name = addslashes($_SESSION['client_name']);
 
                 $content = nl2br(htmlspecialchars($message_data['content']));
                 $uid = intval($message_data['uid']);
@@ -115,9 +116,12 @@ class Events
                         'content' => "<b>对你说: </b>" . $content,
                         'time' => $date,
                     );
+                    //查询用户id
 
+                    $id = $db->query("select id  from `chat_user` where name = '{$client_name}' ");
+                    $to_user_id = isset($id[0]['id']) ? $id[0]['id'] : $message_data['to_client_id'];
                     $db->query("INSERT INTO `chat_rcord` ( `send_user`,`to_user`,`content`,`create_time`,`type`)
-VALUES ( '$uid', '{$message_data['to_client_id']}', '$content', '$date', 1)");
+VALUES ( '$uid', '{$to_user_id}', '$content', '$date', 1)");
 
                     Gateway::sendToClient($message_data['to_client_id'], json_encode($new_message));
                     $new_message['content'] = "<b>你对" . htmlspecialchars($message_data['to_client_name']) . "说: </b>" . $content;

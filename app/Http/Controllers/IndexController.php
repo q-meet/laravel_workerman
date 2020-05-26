@@ -24,6 +24,19 @@ class IndexController extends Controller
         return view('chat', ['room' => $group, 'room_id' => $room_id, 'user' => $user, 'dq_room' => $dq_room]);
     }
 
+    public function room(Request $request)
+    {
+        if (empty($user)){ header('location: /login');die;};
+
+        //房间id
+        $room_id = $request->input('room_id', '1');
+        //获取所有房间号
+        $group = DB::table('chat_room')->get();
+        //获取当前房间号信息
+        $dq_room = DB::table('chat_room')->where(['id' => $room_id])->get();
+        return view('chat', ['room' => $group, 'room_id' => $room_id, 'user' => $user, 'dq_room' => $dq_room]);
+    }
+
     public function getReord(Request $request)
     {
         // 获取到当前currentpage 和 perpage 每页多少条
