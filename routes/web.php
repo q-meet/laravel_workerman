@@ -16,3 +16,6 @@ Route::get('/', function () {
 });
 
 Route::get('index','IndexController@index');
+Route::get('get-reord','IndexController@getReord');
+Route::match(['get', 'post'],'login','IndexController@login');
+Route::match(['get', 'post'],'register','IndexController@register');

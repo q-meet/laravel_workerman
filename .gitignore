@@ -7,20 +7,3 @@
 Homestead.json
 Homestead.yaml
 .env
-
-        git add .gitattributes
-        git add .gitignore
-        git add artisan
-        git add composer.json
-        git add composer.lock
-        git add package.json
-        git add phpunit.xml
-        git add public/
-        git add resources/
-        git add routes/
-        git add server.php
-        git add start.php
-        git add start_for_win.bat
-        git add storage/
-        git add tests/
-        git add webpack.mix.js

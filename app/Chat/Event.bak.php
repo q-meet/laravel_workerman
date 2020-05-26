@@ -1,4 +1,6 @@
 <?php
+
+
 /**
  * This file is part of workerman.
  *
@@ -8,13 +10,13 @@
  *
  * @author walkor<walkor@workerman.net>
  * @copyright walkor<walkor@workerman.net>
- * @link http:        //www.workerman.net/
- * @license http:        //www.opensource.org/licenses/mit-license.php MIT License
+ * @link http://www.workerman.net/
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 /**
  * 用于检测业务代码死循环或者长时间阻塞等问题
- * 如果发现业务卡死，可以将下面declare打开（去掉        //注释），并执行php start.php reload
+ * 如果发现业务卡死，可以将下面declare打开（去掉//注释），并执行php start.php reload
  * 然后观察一段时间workerman.log看是否有process_timeout异常
  */
 //declare(ticks=1);
@@ -25,11 +27,10 @@
  */
 
 use \GatewayWorker\Lib\Gateway;
-use \Workerman\MySQL\Connection;
+
 
 class Events
 {
-
     /**
      * 有消息时
      * @param int $client_id
@@ -37,13 +38,6 @@ class Events
      */
     public static function onMessage($client_id, $message)
     {
-        $mysql_host = '127.0.0.1';
-        $mysql_port = '3306';
-        $user = 'chat';
-        $password = 'chat';
-        $db_bname = 'chat';
-        $db = new Connection($mysql_host, $mysql_port, $user, $password, $db_bname);
-
         // debug
         echo "client:{$_SERVER['REMOTE_ADDR']}:{$_SERVER['REMOTE_PORT']} gateway:{$_SERVER['GATEWAY_ADDR']}:{$_SERVER['GATEWAY_PORT']}  client_id:$client_id session:" . json_encode($_SESSION) . " onMessage:" . $message . "\n";
 
@@ -53,7 +47,6 @@ class Events
             return;
         }
 
-        $date = date('Y-m-d H:i:s');
         // 根据类型执行不同的业务
         switch ($message_data['type']) {
             // 客户端回应服务端的心跳
@@ -67,7 +60,6 @@ class Events
                 }
 
                 // 把房间号昵称放到session中
-                $uid = intval($message_data['uid']);
                 $room_id = $message_data['room_id'];
                 $client_name = htmlspecialchars($message_data['client_name']);
                 $_SESSION['room_id'] = $room_id;
@@ -80,11 +72,8 @@ class Events
                 }
                 $clients_list[$client_id] = $client_name;
 
-                //修改最新id
-                $db->query("update `chat_user` set `client_id`= '$client_id' where id = $uid");
-
                 // 转播给当前房间的所有客户端，xx进入聊天室 message {type:login, client_id:xx, name:xx}
-                $new_message = array('uid' => $uid,'type' => $message_data['type'], 'client_id' => $client_id, 'client_name' => htmlspecialchars($client_name), 'time' => $date);
+                $new_message = array('type' => $message_data['type'], 'client_id' => $client_id, 'client_name' => htmlspecialchars($client_name), 'time' => date('Y-m-d H:i:s'));
                 Gateway::sendToGroup($room_id, json_encode($new_message));
                 Gateway::joinGroup($client_id, $room_id);
 
@@ -102,40 +91,30 @@ class Events
                 $room_id = $_SESSION['room_id'];
                 $client_name = $_SESSION['client_name'];
 
-                $content = nl2br(htmlspecialchars($message_data['content']));
-                $uid = intval($message_data['uid']);
                 // 私聊
                 if ($message_data['to_client_id'] != 'all') {
                     $new_message = array(
                         'type' => 'say',
                         'from_client_id' => $client_id,
-                        'uid' => $uid,
                         'from_client_name' => $client_name,
                         'to_client_id' => $message_data['to_client_id'],
-                        'content' => "<b>对你说: </b>" . $content,
-                        'time' => $date,
+                        'content' => "<b>对你说: </b>" . nl2br(htmlspecialchars($message_data['content'])),
+                        'time' => date('Y-m-d H:i:s'),
                     );
-
-                    $db->query("INSERT INTO `chat_rcord` ( `send_user`,`to_user`,`content`,`create_time`,`type`)
-VALUES ( '$uid', '{$message_data['to_client_id']}', '$content', '$date', 1)");
-
                     Gateway::sendToClient($message_data['to_client_id'], json_encode($new_message));
-                    $new_message['content'] = "<b>你对" . htmlspecialchars($message_data['to_client_name']) . "说: </b>" . $content;
+                    $new_message['content'] = "<b>你对" . htmlspecialchars($message_data['to_client_name']) . "说: </b>" . nl2br(htmlspecialchars($message_data['content']));
                     return Gateway::sendToCurrentClient(json_encode($new_message));
                 }
 
                 $new_message = array(
                     'type' => 'say',
                     'from_client_id' => $client_id,
-                    'uid' => $uid,
                     'from_client_name' => $client_name,
                     'to_client_id' => 'all',
-                    'content' => $content,
-                    'time' => $date,
+                    'content' => nl2br(htmlspecialchars($message_data['content'])),
+                    'time' => date('Y-m-d H:i:s
+                    '),
                 );
-                $db->query("INSERT INTO `chat_rcord` ( `send_user`, `to_group`,`content`,`create_time`,`type`)
-VALUES ( '$uid', $room_id, '$content', '$date', 2)");
-
                 return Gateway::sendToGroup($room_id, json_encode($new_message));
         }
     }
@@ -158,5 +137,3 @@ VALUES ( '$uid', $room_id, '$content', '$date', 2)");
     }
 
 }
-
-?>
